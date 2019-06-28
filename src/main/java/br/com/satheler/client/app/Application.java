@@ -11,24 +11,35 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
 
+import org.apache.zookeeper.Zookeeper;
+
 /**
  * Application
  */
 public class Application {
 
     private static Socket CONNECTION;
-
-    public Application(Socket socket) {
-        CONNECTION = socket;
-    }
-
     public static void main(String args[]) {
+        if(args.length < 1) {
+            System.err.println("USAGE: <zookeeper_host>:<zookeeper_port>");
+            System.exit(2);
+        }
+
+        String zookeeperHost = args[0];
+        Zookeeper zookeeper = new Zookeeper(zookeeperHost, 3000);
+
+        findServers(zookeeper);
+
+        String[] hostPort = args[0].split(":");
+        String host = hostPort[0];
+        int port = Integer.parseInt(hostPort[1]);
 
         BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
 
         try {
-            CONNECTION = new Socket("localhost", 1234);
+            CONNECTION = new Socket(host, port);
             PrintStream socketOutput = new PrintStream(CONNECTION.getOutputStream());
+
             System.out.println("===== CONECTADO COM O SERVIDOR =====");
             String userInput;
 
@@ -38,7 +49,7 @@ public class Application {
                 System.out.print("COMANDO > ");
                 userInput = keyboard.readLine();
                 socketOutput.println(userInput);
-                
+
                 do {
                     response = server.readLine();
                     if(!response.equals("")) {
@@ -48,8 +59,18 @@ public class Application {
             }
 
         } catch (IOException e) {
-            System.out.println("NAO FOI POSSIVEL CONECTAR AO SERVIDOR");
-            System.exit(0);
+            System.err.println("NAO FOI POSSIVEL CONECTAR AO SERVIDOR");
+            System.exit(1);
+        }
+    }
+
+    public static void setTimeout(Runnable runnable, int delay) {
+        try {
+            Thread.sleep(delay);
+            runnable.run();
+        }
+        catch (Exception e){
+            System.err.println(e);
         }
     }
 }
