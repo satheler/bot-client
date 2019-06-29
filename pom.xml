@@ -9,7 +9,6 @@
     <version>1.0-SNAPSHOT</version>
 
     <name>client</name>
-    <!-- FIXME change it to the project's website -->
     <url>http://www.example.com</url>
 
     <properties>
@@ -89,7 +88,7 @@
                     <configuration>
                         <mainClass>br.com.satheler.client.app.Application</mainClass>
                         <arguments>
-                            <argument>192.168.188.180:1234</argument>
+                            <argument>192.168.188.180:2181</argument>
                         </arguments>
                     </configuration>
                 </plugin>

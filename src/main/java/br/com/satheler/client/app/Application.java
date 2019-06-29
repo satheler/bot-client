@@ -1,76 +1,78 @@
 package br.com.satheler.client.app;
 
-/**
- * Hello world!
- *
- */
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.apache.zookeeper.Zookeeper;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooKeeper;
+
+import br.com.satheler.client.servers.SocketConnection;
 
 /**
  * Application
  */
-public class Application {
+public class Application implements Watcher {
 
-    private static Socket CONNECTION;
-    public static void main(String args[]) {
-        if(args.length < 1) {
+    public static void main(String args[]) throws IOException, KeeperException, InterruptedException {
+        if (args.length < 1) {
             System.err.println("USAGE: <zookeeper_host>:<zookeeper_port>");
             System.exit(2);
         }
 
         String zookeeperHost = args[0];
-        Zookeeper zookeeper = new Zookeeper(zookeeperHost, 3000);
+        ZooKeeper zkServer = new ZooKeeper(zookeeperHost, 3000, new Application());
 
-        findServers(zookeeper);
+        String socketServer = findServers(zkServer);
+        // LISTA DE SERVIDORES
+        // SELECIOANR UM ZNODO
+        // PEGAR O ENDEREÇO DO SERVIDOR ATRÁVES DO ZNODO
+        // PROCURAR OUTRO SERVIDOR CASO UM CAIA
 
-        String[] hostPort = args[0].split(":");
+        String[] hostPort = socketServer.split(":");
         String host = hostPort[0];
         int port = Integer.parseInt(hostPort[1]);
 
-        BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
+        System.out.println(socketServer);
 
-        try {
-            CONNECTION = new Socket(host, port);
-            PrintStream socketOutput = new PrintStream(CONNECTION.getOutputStream());
+        SocketConnection server = new SocketConnection(host, port);
+        server.run();
+    }
 
-            System.out.println("===== CONECTADO COM O SERVIDOR =====");
-            String userInput;
+    private static String findServers(ZooKeeper zookeeper) throws KeeperException, InterruptedException {
+        List<String> zNodeList = zookeeper.getChildren("/", true);
+        List<String> availableServers = new ArrayList<String>();
 
-            BufferedReader server = new BufferedReader(new InputStreamReader(CONNECTION.getInputStream()));
-            String response;
-            while (true) {
-                System.out.print("COMANDO > ");
-                userInput = keyboard.readLine();
-                socketOutput.println(userInput);
 
-                do {
-                    response = server.readLine();
-                    if(!response.equals("")) {
-                        System.out.println("BOT > " + response);
-                    }
-                } while (server.ready());
+        for (String zNode : zNodeList) {
+            if(!zNode.equals("zookeeper")) {
+                availableServers.add("/" + zNode);
             }
-
-        } catch (IOException e) {
-            System.err.println("NAO FOI POSSIVEL CONECTAR AO SERVIDOR");
-            System.exit(1);
         }
+
+        byte[] zNodeData = zookeeper.getData(availableServers.get(0), null, null);
+        String socketHost = new String(zNodeData);
+
+        return socketHost;
     }
 
     public static void setTimeout(Runnable runnable, int delay) {
         try {
             Thread.sleep(delay);
             runnable.run();
-        }
-        catch (Exception e){
+        } catch (Exception e) {
             System.err.println(e);
         }
+    }
+
+    @Override
+    public void process(WatchedEvent event) {
+        // TODO
     }
 }
