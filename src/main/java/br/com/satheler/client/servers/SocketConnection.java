@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.net.Socket;
+import java.util.List;
+
+import br.com.satheler.client.app.Application;
+import br.com.satheler.client.utils.HostPort;
 
 /**
  * SocketServer
@@ -12,42 +16,40 @@ import java.net.Socket;
 public class SocketConnection {
 
     private Socket CONNECTION;
+    private String serverName;
     private String host;
     private int port;
 
-    public SocketConnection(String host, int port) {
-        this.host = host;
-        this.port = port;
+    public SocketConnection(HostPort hostPort, String serverName) {
+        this.host = hostPort.host;
+        this.port = hostPort.port;
+        this.serverName = serverName;
     }
 
-    public void run() {
+    public void run() throws IOException {
         BufferedReader keyboard = new BufferedReader(new InputStreamReader(System.in));
 
-        try {
-            CONNECTION = new Socket(this.host, this.port);
-            PrintStream socketOutput = new PrintStream(CONNECTION.getOutputStream());
+        CONNECTION = new Socket(this.host, this.port);
+        PrintStream socketOutput = new PrintStream(CONNECTION.getOutputStream());
 
-            System.out.println("===== CONECTADO COM O SERVIDOR =====");
-            String userInput;
-
-            BufferedReader server = new BufferedReader(new InputStreamReader(CONNECTION.getInputStream()));
-            String response;
-            while (true) {
+        BufferedReader server = new BufferedReader(new InputStreamReader(CONNECTION.getInputStream()));
+        String response;
+        while (true) {
+            if (Application.USER_INPUT == null) {
                 System.out.print("COMANDO > ");
-                userInput = keyboard.readLine();
-                socketOutput.println(userInput);
-
-                do {
-                    response = server.readLine();
-                    if (!response.equals("")) {
-                        System.out.println("BOT > " + response);
-                    }
-                } while (server.ready());
+                Application.USER_INPUT = keyboard.readLine();
             }
 
-        } catch (IOException e) {
-            System.err.println("NAO FOI POSSIVEL CONECTAR AO SERVIDOR");
-            System.exit(1);
+            socketOutput.println(Application.USER_INPUT);
+
+            do {
+                response = server.readLine();
+                if (!response.equals("")) {
+                    System.out.println("[" + this.serverName + "]" + " BOT > " + response);
+                }
+            } while (server.ready());
+
+            Application.USER_INPUT = null;
         }
     }
 }

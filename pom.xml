@@ -88,7 +88,7 @@
                     <configuration>
                         <mainClass>br.com.satheler.client.app.Application</mainClass>
                         <arguments>
-                            <argument>192.168.188.180:2181</argument>
+                            <argument>localhost:2181</argument>
                         </arguments>
                     </configuration>
                 </plugin>
